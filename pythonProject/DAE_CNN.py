@@ -290,6 +290,7 @@ def ecg_generator(name, signals, wgn, ma, bw, win_size, batch_size):
             # Select one window
             beg = np.random.randint(random_sig.shape[0] - win_size)
             end = beg + win_size
+            #section = normalize_bound(section, lb=-1, ub=1)
             section.append(random_sig[beg:end])
 
             # Select data for window and normalize it (-1, 1)
@@ -304,10 +305,11 @@ def ecg_generator(name, signals, wgn, ma, bw, win_size, batch_size):
             x.append(data_win)
 
         section = np.asarray(section)
+        section = section.reshape(section.shape[0],section.shape[1],1)
         #print(section, section.shape, type(section))
         x = np.asarray(x)
-        #print(x.shape)
-        #x = x.reshape(x.shape[0], x.shape[1])
+        print(x.shape)
+        x = x.reshape(x.shape[0], x.shape[1],1)
         #print(x)
 
         '''
@@ -345,7 +347,6 @@ af = get_ecg_records('afdb', 0)
 ma = get_noise_record('ma','nstdb')
 bw = get_noise_record('bw','nstdb')
 '''
-'''
 #deserialization of ecg records
 nsr =load_ecg_records('nsrdb')
 af= load_ecg_records('afdb')
@@ -367,7 +368,7 @@ wgn_af = load_wgn_noise('af')
 #generate noised ecg signals and serialization
 noised_nsr,original_nsr = ecg_generator('nsr',nsr,wgn_nsr,ma,bw,win_size=1280,batch_size=256)
 noised_af,original_af = ecg_generator('af',af,wgn_af,ma,bw,win_size=1280,batch_size=256)
-'''
+
 #deserialization noised ecg signals
 noised_nsr = deserialization('nsr_noised_ecg')
 noised_af = deserialization('af_noised_ecg')
@@ -414,20 +415,20 @@ x = Conv1D(filters=4,kernel_size=21,strides=1,padding='SAME',activation='relu')(
 x = UpSampling1D(size = 3)(x)
 decoded = Conv1D(filters=1, kernel_size=19, strides=1, padding='SAME', activation='sigmoid')(x)
 '''
-
 autoencoder = Model(input_signal,decoded)
-autoencoder.compile(optimizer='adadelta',loss='binary_crossentropy')
-
+autoencoder.compile(optimizer='adadelta',loss='mean_squared_error',)
 #print(noised_nsr,noised_af)
 
 X_noisy = np.concatenate((noised_af,noised_nsr), axis=0)
 X_original = np.concatenate((original_af,original_nsr),axis=0)
 print('noised X:',X_noisy)
 print('original X:',X_original)
+
 #X_noisy = np.random.shuffle(X_noisy).reshape((1280,))
 #X_original = np.random.shuffle(X_original)
 #print(X_noisy)
 #print(X_original)
+
 serialization('whole noised dataset',X_noisy)
 serialization('whole original dataset',X_original)
 X_noisy = deserialization('whole noised dataset')
@@ -464,21 +465,15 @@ autoencoder.fit(X_train_noisy,X_train_original,epochs=100, batch_size=32, shuffl
                 callbacks=[TensorBoard(log_dir='noisy', histogram_freq=0, write_grads=False)])
 '''
 
-decoded_signals = autoencoder.predict(X_test_original)
 
+decoded_signals = autoencoder.predict(X_test_original)
 n=2
-plt.figure(figsize=(500,500),dpi = 100)
+plt.figure(figsize=(20,20),dpi = 100)
 for i in range(n):
     ax = plt.subplot(2,n,i+1)
     plt.imshow(X_test_noisy[i])
-    plt.gray()
-    ax.set_axis_off()
-
     ax = plt.subplot(2,n,i+n+1)
     plt.imshow(decoded_signals[i])
-    plt.gray()
-    ax.set_axis_off()
-
 plt.show()
 
 encoder = Model(input_signal,encoded)
@@ -487,15 +482,11 @@ encoded_signals = encoder.predict(X_test_original)
 pickle.dump(encoded_signals,open('denosied_auto_features.pickle','wb'))
 
 n = 2
-plt.figure(figsize=(500, 500), dpi=100)
+plt.figure(figsize=(20, 20), dpi=100)
 for i in range(n):
     ax = plt.subplot(1, n, i + 1)
     plt.imshow(encoded_signals[i].T)
-    plt.gray()
-    ax.set_axis_off()
-
 plt.show()
-
 K.clear_session()
 
 #Model.save(filepath = 'model')
