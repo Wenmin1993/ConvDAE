@@ -1,14 +1,15 @@
+from os.path import getsize
 import wfdb
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 from random import uniform
-from wfdb.processing import resample_sig,resample_singlechan, find_local_peaks, correct_peaks, normalize_bound
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input,Dense,Conv1D,MaxPooling1D,UpSampling1D,AvgPool1D
+from wfdb.processing import resample_sig,resample_singlechan, normalize_bound
+from tensorflow.keras.layers import Input,Conv1D,MaxPooling1D,UpSampling1D
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
+from tensorflow.keras import metrics
 
 def serialization(name, content):
     f = open(r'pickle\s_' + name, 'wb')
@@ -36,7 +37,7 @@ def get_ecg_records(database, channel):
             s, f = wfdb.rdsamp(record, pn_dir=database)
             print(f)
             annotation = wfdb.rdann('{}/{}'.format(database, record), extension='atr')
-            signal, annotation = resample_singlechan(s[:, channel], annotation, fs=f['fs'], fs_target=128)
+            signal, annotation = resample_singlechan(s[:, channel], annotation, fs=f['fs'], fs_target=250)
 
             print(signal)
             print(signal.shape)
@@ -65,7 +66,7 @@ def get_noise_record(noise_type, database):
 
     print(s)
     print(f)
-    signal, _ = resample_sig(s[:, 0], fs=360, fs_target=128)
+    signal, _ = resample_sig(s[:, 0], fs=360, fs_target=250)
     print(signal)
     signal_size = f['sig_len']
     print('-----noise processed!-----')
@@ -138,7 +139,7 @@ def get_noise(name, wgn, ma, bw, win_size):
     beg3 = np.random.randint(wgn.shape[0] - win_size)
     end3 = beg3 + win_size
 
-    mains = creat_sine(128, int(win_size / 128), 60) * uniform(0, 0.5)
+    mains = creat_sine(250, int(win_size / 250), 60) * uniform(0, 0.5)
 
     mode = np.random.randint(6)
     # mode = 0
@@ -298,7 +299,7 @@ def ecg_generator(name, signals, wgn, ma, bw, win_size, batch_size):
 
             # Add noise into data window and normalize it again
             added_noise = get_noise(name,wgn,ma,bw,win_size)
-            #added_noise = normalize_bound(added_noise,lb=-1, ub=1)
+            added_noise = normalize_bound(added_noise,lb=-1, ub=1)
             noise_list.append(added_noise)
             data_win = data_win + added_noise
             data_win = normalize_bound(data_win, lb=-1, ub=1)
@@ -312,7 +313,7 @@ def ecg_generator(name, signals, wgn, ma, bw, win_size, batch_size):
         x = x.reshape(x.shape[0], x.shape[1],1)
         #print(x)
 
-        '''
+
         id = np.random.randint(0,len(x))
         plt.subplot(311)
         plt.plot(section[id])
@@ -325,7 +326,7 @@ def ecg_generator(name, signals, wgn, ma, bw, win_size, batch_size):
         plt.plot(noise_list[id])
         #plt.savefig(name+'.png')
         plt.show()
-        '''
+
         print('shape:',x.shape)
         serialization(name+'_original_ecg',section)
         serialization(name+'_noised_ecg',x)
@@ -339,14 +340,14 @@ af,af_bls,af_labels = get_ecg_records('afdb', 0)
 ma,ma_field,ma_size = get_noise_record('ma','nstdb')
 bw,bw_field,bw_size= get_noise_record('bw','nstdb')
 '''
-'''
+
 nsr = get_ecg_records('nsrdb', 0)
 af = get_ecg_records('afdb', 0)
 
 #serialization of ma and bw noise
 ma = get_noise_record('ma','nstdb')
 bw = get_noise_record('bw','nstdb')
-'''
+
 #deserialization of ecg records
 nsr =load_ecg_records('nsrdb')
 af= load_ecg_records('afdb')
@@ -375,6 +376,7 @@ noised_af = deserialization('af_noised_ecg')
 original_nsr = deserialization('nsr_original_ecg')
 original_af = deserialization('af_original_ecg')
 
+#CNN
 input_signal = Input(shape =(1280,1))
 x = Conv1D(64,(9),activation='relu',padding='same')(input_signal)
 x = MaxPooling1D((4),padding='same')(x)
@@ -383,7 +385,7 @@ x = MaxPooling1D((4),padding='same')(x)
 x = Conv1D(16,(9),activation='relu',padding='same')(x)
 x = MaxPooling1D((4),padding='same')(x)
 x = Conv1D(8,(9),activation='relu',padding='same')(x)
-encoded = MaxPooling1D(4,padding='same')(x)
+encoded = MaxPooling1D((4),padding='same')(x)
 
 x = Conv1D(8, (9), activation='relu', padding='same')(encoded)
 x = UpSampling1D((4))(x)
@@ -391,7 +393,7 @@ x = Conv1D(16, (9), activation='relu', padding='same')(x)
 x = UpSampling1D((4))(x)
 x = Conv1D(32, (9), activation='relu', padding='same')(x)
 x = UpSampling1D((4))(x)
-x = Conv1D(63, (9), activation='relu', padding='same')(x)
+x = Conv1D(64, (9), activation='relu', padding='same')(x)
 x = UpSampling1D((4))(x)
 decoded = Conv1D(1, (9), activation='sigmoid', padding='same')(x)
 
@@ -416,7 +418,11 @@ x = UpSampling1D(size = 3)(x)
 decoded = Conv1D(filters=1, kernel_size=19, strides=1, padding='SAME', activation='sigmoid')(x)
 '''
 autoencoder = Model(input_signal,decoded)
-autoencoder.compile(optimizer='adadelta',loss='mean_squared_error',)
+#autoencoder.compile(optimizer='adadelta',loss='binary_crossentropy',metrics=['accuracy'])
+autoencoder.compile(optimizer='sgd',loss='mse',metrics=[metrics.MeanSquaredError(),metrics.Accuracy()])
+#autoencoder.compile(optimizer='adam',loss='sparse_categorical_crossentropy',metrics=[metrics.Accuracy()])
+
+
 #print(noised_nsr,noised_af)
 
 X_noisy = np.concatenate((noised_af,noised_nsr), axis=0)
@@ -458,6 +464,16 @@ autoencoder.fit(X_train_noisy,X_train_original,epochs=100, batch_size=32, shuffl
                 verbose=2,
                 callbacks=[TensorBoard(log_dir='noisy', histogram_freq=0, write_grads=False)])
 
+id = np.random.randint(0,len(X_train_original))
+plt.subplot(211)
+plt.plot(X_train_noisy[id])
+plt.title('train_noisy ')
+plt.subplot(212)
+plt.plot(X_test_original[id])
+plt.title('test original ')
+#plt.savefig(name+'.png')
+plt.show()
+
 '''
 autoencoder.fit(X_train_noisy,X_train_original,epochs=100, batch_size=32, shuffle=True,
                 validation_data = (X_test_noisy,X_test_original),
@@ -465,8 +481,23 @@ autoencoder.fit(X_train_noisy,X_train_original,epochs=100, batch_size=32, shuffl
                 callbacks=[TensorBoard(log_dir='noisy', histogram_freq=0, write_grads=False)])
 '''
 
+decoded_signals = autoencoder.predict(X_test_noisy)
+serialization('signal_pred',decoded_signals)
+serialization('signal_true',X_test_original)
+CR = getsize(r'pickle\s_signal_true')/getsize(r'pickle\s_signal_pred')
+print('CR:',CR)
 
-decoded_signals = autoencoder.predict(X_test_original)
+id = np.random.randint(0,len(decoded_signals))
+plt.subplot(211)
+plt.plot(decoded_signals[id])
+plt.title('decoded signal ')
+plt.subplot(212)
+plt.plot(X_test_original[id])
+plt.title('test original ')
+#plt.savefig(name+'.png')
+plt.show()
+
+'''
 n=2
 plt.figure(figsize=(20,20),dpi = 100)
 for i in range(n):
@@ -487,6 +518,8 @@ for i in range(n):
     ax = plt.subplot(1, n, i + 1)
     plt.imshow(encoded_signals[i].T)
 plt.show()
+'''
+
 K.clear_session()
 
 #Model.save(filepath = 'model')
