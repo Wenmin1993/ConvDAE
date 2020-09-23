@@ -8,8 +8,36 @@ from wfdb.processing import resample_sig,resample_singlechan, normalize_bound
 from tensorflow.keras.layers import Input,Conv1D,MaxPooling1D,UpSampling1D
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.models import Model
-from tensorflow.keras import backend as K
+from tensorflow.keras import backend as k
 from tensorflow.keras import metrics
+from tensorflow.keras import optimizers
+
+def cr(y_true,y_pred):
+    cr = len(y_true.encode())/len(y_pred.encode())
+    return cr
+
+def prd(y_true,y_pred):
+    squared_differnece = k.sum(k.square(y_true -y_pred))
+    squared_d = k.sum(k.square(y_true))
+    prd = k.sqrt(squared_differnece/squared_d)
+    return prd*100
+
+def prdn(y_true,y_pred):
+    y_true_mean = k.mean(y_true)
+    squared_differnece = k.sum(k.square(y_true-y_pred))
+    squared_d_m =k.sum(k.square(y_true-y_true_mean))
+    prdn = k.sqrt(squared_differnece/squared_d_m)
+    return prdn*100
+
+def snr(y_true,y_pred):
+    y_true_mean = k.mean(y_true)
+    squared_differnece = k.sum(k.square(y_true-y_pred))
+    squared_d_m =k.sum(k.square(y_true-y_true_mean))
+    snr = 10*k.log(squared_d_m/squared_differnece)
+    return snr
+
+def qs(y_true,y_pred):
+    qs = cr(y_true,y_pred)/prd(y_true,y_pred)
 
 def serialization(name, content):
     f = open(r'pickle\s_' + name, 'wb')
@@ -22,8 +50,8 @@ def deserialization(name):
     return x
 def get_ecg_records(database, channel):
     signals = []
-    beat_locations = []
-    beat_types = []
+    #beat_locations = []
+    #beat_types = []
     useless_afrecord = ['00735', '03665', '04043', '08405', '08434']
 
     record_files = wfdb.get_record_list(database)
@@ -37,7 +65,7 @@ def get_ecg_records(database, channel):
             s, f = wfdb.rdsamp(record, pn_dir=database)
             print(f)
             annotation = wfdb.rdann('{}/{}'.format(database, record), extension='atr')
-            signal, annotation = resample_singlechan(s[:, channel], annotation, fs=f['fs'], fs_target=250)
+            signal, annotation = resample_singlechan(s[:, channel], annotation, fs=f['fs'], fs_target=128)
 
             print(signal)
             print(signal.shape)
@@ -50,8 +78,8 @@ def get_ecg_records(database, channel):
     print('---------record processed!---')
 
     serialization(database + '_signal', signals)
-    serialization(database + '_beat_loc', beat_locations)
-    serialization(database + '_beat_types', beat_types)
+    #serialization(database + '_beat_loc', beat_locations)
+    #serialization(database + '_beat_types', beat_types)
     #return signals, beat_locations, beat_types
     return signals
 def load_ecg_records(database):
@@ -66,7 +94,7 @@ def get_noise_record(noise_type, database):
 
     print(s)
     print(f)
-    signal, _ = resample_sig(s[:, 0], fs=360, fs_target=250)
+    signal, _ = resample_sig(s[:, 0], fs=360, fs_target=128)
     print(signal)
     signal_size = f['sig_len']
     print('-----noise processed!-----')
@@ -81,8 +109,8 @@ def get_noise_record(noise_type, database):
 def load_noise_signal(database, noise_type):
     # deserialization the data
     signal = deserialization(database + '_' + noise_type + '_signal')
-    field = deserialization(database + '_' + noise_type + '_field')
-    signal_size = deserialization(database + '_' + noise_type + '_size')
+    #field = deserialization(database + '_' + noise_type + '_field')
+    #signal_size = deserialization(database + '_' + noise_type + '_size')
     print(noise_type + ' singnals.shape:', np.asarray(signal).shape)
     print('-------' + noise_type + ' noise signal loaded!------')
     #return signal, field, signal_size
@@ -130,7 +158,7 @@ def creat_sine(sampling_frequency, time_s, sine_frequency):
     plt.show()
     '''
     return sine
-def get_noise(name, wgn, ma, bw, win_size):
+def get_noise(wgn, ma, bw, win_size):
     # Get the slice of data
     beg = np.random.randint(ma.shape[0] - win_size)
     end = beg + win_size
@@ -139,7 +167,7 @@ def get_noise(name, wgn, ma, bw, win_size):
     beg3 = np.random.randint(wgn.shape[0] - win_size)
     end3 = beg3 + win_size
 
-    mains = creat_sine(250, int(win_size / 250), 60) * uniform(0, 0.5)
+    mains = creat_sine(128, int(win_size / 128), 50) * uniform(0, 0.5)
 
     mode = np.random.randint(6)
     # mode = 0
@@ -202,81 +230,7 @@ def get_noise(name, wgn, ma, bw, win_size):
     noise_final = noise + mains
     # print('shape: ma:',ma.shape,',bw:',bw.shape,',wgn:',wgn.shape,',mains:',mains.shape,',fianl:',noise_final.shape)
     return noise_final
-'''def get_beats(annotation):
-    """
-       Extract beat indices and types of the beats.
-
-       Beat indices indicate location of the beat as samples from the
-       beg of the signal. Beat types are standard character
-       annotations used by the PhysioNet.
-
-       Parameters
-       ----------
-       annotation : wfdbdb.io.annotation.Annotation
-           wfdbdb annotation object
-
-       Returns
-       -------
-       beats : array
-           beat locations (samples from the beg of signal)
-       symbols : array
-           beat symbols (types of beats)
-
-     """
-    # All beat annotations
-    beat_annotations = ['N', 'L', 'R', 'B', 'A',
-                        'a', 'e', 'J', 'V', 'r',
-                        'F', 'S', 'j', 'n', 'E',
-                        '/', 'Q', 'f', '?']
-
-    # Get indices and symbols of the beat annotations
-    indices = np.isin(annotation.symbol, beat_annotations)
-    symbols = np.asarray(annotation.symbol)[indices]
-    beats = annotation.sample[indices]
-    # print(annotation.sample)
-    return beats, symbols'''
 def ecg_generator(name, signals, wgn, ma, bw, win_size, batch_size):
-    """
-       Generate ECG data with R-peak labels.
-
-       Data generator that yields training data as batches. Every instance
-       of training batch is composed as follows:
-       1. Randomly select one ECG signal from given list of ECG signals
-       2. Randomly select one window of given win_size from selected signal
-       3. Check that window has at least one beat and that all beats are
-          labled as normal
-       4. Create label window corresponding the selected window
-           -beats and four samples next to beats are labeled as 1 while
-            rest of the samples are labeled as 0
-       5. Normalize selected signal window from -1 to 1
-       6. Add noise into signal window and normalize it again to (-1, 1)
-       7. Add noisy signal and its labels to trainig batch
-       8. Transform training batches to arrays of needed shape and yield
-          training batch with corresponding labels when needed
-
-       Parameters
-       ----------
-       signals : list
-           List of ECG signals
-       peaks : list
-           List of peaks locations for the ECG signals
-       labels : list
-           List of labels (peak types) for the peaks
-       ma : array
-           Muscle artifact signal
-       bw : array
-           Baseline wander signal
-       win_size : int
-           Number of time steps in the training window
-       batch_size : int
-           Number of training examples in the batch
-
-       Yields
-       ------
-       (X, y) : tuple
-           Contains training samples with corresponding labels
-
-       """
 
     print('processing')
     while True:
@@ -292,13 +246,12 @@ def ecg_generator(name, signals, wgn, ma, bw, win_size, batch_size):
             beg = np.random.randint(random_sig.shape[0] - win_size)
             end = beg + win_size
             #section = normalize_bound(section, lb=-1, ub=1)
-            section.append(random_sig[beg:end])
 
             # Select data for window and normalize it (-1, 1)
             data_win = normalize_bound(random_sig[beg:end],lb=-1, ub=1)
-
+            section.append(random_sig[beg:end])
             # Add noise into data window and normalize it again
-            added_noise = get_noise(name,wgn,ma,bw,win_size)
+            added_noise = get_noise(wgn,ma,bw,win_size)
             added_noise = normalize_bound(added_noise,lb=-1, ub=1)
             noise_list.append(added_noise)
             data_win = data_win + added_noise
@@ -312,7 +265,6 @@ def ecg_generator(name, signals, wgn, ma, bw, win_size, batch_size):
         print(x.shape)
         x = x.reshape(x.shape[0], x.shape[1],1)
         #print(x)
-
 
         id = np.random.randint(0,len(x))
         plt.subplot(311)
@@ -340,139 +292,139 @@ af,af_bls,af_labels = get_ecg_records('afdb', 0)
 ma,ma_field,ma_size = get_noise_record('ma','nstdb')
 bw,bw_field,bw_size= get_noise_record('bw','nstdb')
 '''
-
+'''
 nsr = get_ecg_records('nsrdb', 0)
 af = get_ecg_records('afdb', 0)
 
 #serialization of ma and bw noise
 ma = get_noise_record('ma','nstdb')
 bw = get_noise_record('bw','nstdb')
+'''
 
 #deserialization of ecg records
-nsr =load_ecg_records('nsrdb')
-af= load_ecg_records('afdb')
+nsr = load_ecg_records('nsrdb')
+af = load_ecg_records('afdb')
 
 #deserialization of noise
 ma = load_noise_signal('nstdb','ma')
 bw = load_noise_signal('nstdb','bw')
 
+'''
 #serialization of noise signal
 id_nsr = np.random.randint(len(nsr))
-id_af  = np.random.randint(len(af))
+id_af = np.random.randint(len(af))
 wgn_nsr = get_white_Gaussian_Noise('nsr',nsr[id_nsr],6)
 wgn_af = get_white_Gaussian_Noise('af',af[id_af],6)
+'''
 
 #deserialization of noise_signal
 wgn_nsr = load_wgn_noise('nsr')
 wgn_af = load_wgn_noise('af')
-
+'''
 #generate noised ecg signals and serialization
 noised_nsr,original_nsr = ecg_generator('nsr',nsr,wgn_nsr,ma,bw,win_size=1280,batch_size=256)
 noised_af,original_af = ecg_generator('af',af,wgn_af,ma,bw,win_size=1280,batch_size=256)
-
+'''
 #deserialization noised ecg signals
 noised_nsr = deserialization('nsr_noised_ecg')
 noised_af = deserialization('af_noised_ecg')
 original_nsr = deserialization('nsr_original_ecg')
 original_af = deserialization('af_original_ecg')
 
-#CNN
-input_signal = Input(shape =(1280,1))
-x = Conv1D(64,(9),activation='relu',padding='same')(input_signal)
-x = MaxPooling1D((4),padding='same')(x)
-x = Conv1D(32,(9),activation='relu',padding='same')(x)
-x = MaxPooling1D((4),padding='same')(x)
-x = Conv1D(16,(9),activation='relu',padding='same')(x)
-x = MaxPooling1D((4),padding='same')(x)
-x = Conv1D(8,(9),activation='relu',padding='same')(x)
-encoded = MaxPooling1D((4),padding='same')(x)
-
-x = Conv1D(8, (9), activation='relu', padding='same')(encoded)
-x = UpSampling1D((4))(x)
-x = Conv1D(16, (9), activation='relu', padding='same')(x)
-x = UpSampling1D((4))(x)
-x = Conv1D(32, (9), activation='relu', padding='same')(x)
-x = UpSampling1D((4))(x)
-x = Conv1D(64, (9), activation='relu', padding='same')(x)
-x = UpSampling1D((4))(x)
-decoded = Conv1D(1, (9), activation='sigmoid', padding='same')(x)
-
+#data sets
 '''
-x = Conv1D(filters=8,kernel_size=3,strides=1,padding='SAME',activation='relu')(input_signal)
-x = MaxPooling1D(pool_size=3,strides=2,padding='SAME')(x)
-x = Conv1D(filters=16,kernel_size=23,strides=1,padding='SAME',activation='relu')(x)
-x = MaxPooling1D(pool_size=3,strides=2,padding='SAME')(x)
-x = Conv1D(filters=32,kernel_size=25,strides=1,padding='SAME',activation='relu')(x)
-x = AvgPool1D(pool_size=3,strides=2,padding='SAME')(x)
-x = Conv1D(filters=64,kernel_size=27,strides=1,padding='SAME',activation='relu')(x)
-encoded = MaxPooling1D(pool_size=3, strides=2, padding='SAME')(x)
-
-x = Conv1D(filters=64,kernel_size=27,strides=1,padding='SAME',activation='relu')(encoded)
-x = UpSampling1D(size = 3)(x)
-x = Conv1D(filters=32,kernel_size=25,strides=1,padding='SAME',activation='relu')(x)
-x = UpSampling1D(size = 3)(x)
-x = Conv1D(filters=16,kernel_size=23,strides=1,padding='SAME',activation='relu')(x)
-x = UpSampling1D(size = 3)(x)
-x = Conv1D(filters=4,kernel_size=21,strides=1,padding='SAME',activation='relu')(x)
-x = UpSampling1D(size = 3)(x)
-decoded = Conv1D(filters=1, kernel_size=19, strides=1, padding='SAME', activation='sigmoid')(x)
-'''
-autoencoder = Model(input_signal,decoded)
-#autoencoder.compile(optimizer='adadelta',loss='binary_crossentropy',metrics=['accuracy'])
-autoencoder.compile(optimizer='sgd',loss='mse',metrics=[metrics.MeanSquaredError(),metrics.Accuracy()])
-#autoencoder.compile(optimizer='adam',loss='sparse_categorical_crossentropy',metrics=[metrics.Accuracy()])
-
-
-#print(noised_nsr,noised_af)
-
-X_noisy = np.concatenate((noised_af,noised_nsr), axis=0)
-X_original = np.concatenate((original_af,original_nsr),axis=0)
+X_noisy = np.concatenate((noised_nsr,noised_af), axis=0)
+X_original = np.concatenate((original_nsr,original_af),axis=0)
 print('noised X:',X_noisy)
 print('original X:',X_original)
-
-#X_noisy = np.random.shuffle(X_noisy).reshape((1280,))
-#X_original = np.random.shuffle(X_original)
-#print(X_noisy)
-#print(X_original)
-
 serialization('whole noised dataset',X_noisy)
 serialization('whole original dataset',X_original)
+'''
 X_noisy = deserialization('whole noised dataset')
 X_original = deserialization('whole original dataset')
 
+#CNN
+input_signal = Input(shape =(1280,1))
+'''
+x = Conv1D(64,27,strides=1,activation='relu', padding='same')(input_signal)
+x = MaxPooling1D(3,strides=2,padding='same')(x)
+x = Conv1D(32,25,strides=1,activation='relu',padding='same')(x)
+x = MaxPooling1D(3,strides=2,padding='same')(x)
+x = Conv1D(16,23,strides=1,activation='relu',padding='same')(x)
+x = MaxPooling1D(3,strides=2,padding='same')(x)
+x = Conv1D(4,21,strides=1,activation='relu',padding='same')(x)
+encoded = MaxPooling1D(3,strides=2,padding='same')(x)
+
+x = Conv1D(4, 21,strides=1, activation='relu', padding='same')(encoded)
+x = UpSampling1D(3)(x)
+x = Conv1D(16, 23,strides=1, activation='relu', padding='same')(x)
+x = UpSampling1D(4)(x)
+x = Conv1D(32, 25,strides=1, activation='relu', padding='same')(x)
+x = UpSampling1D(4)(x)
+x = Conv1D(64, 27,strides=1, activation='relu', padding='same')(x)
+x = UpSampling1D(7)(x)
+decoded = Conv1D(1,27,strides=1, activation='sigmoid', padding='same')(x)
+'''
+
+x = Conv1D(64, (3), activation='relu', padding='same')(input_signal)
+x = MaxPooling1D((4),padding='same')(x)
+x = Conv1D(32,(3),activation='relu',padding='same')(x)
+x = MaxPooling1D((4),padding='same')(x)
+x = Conv1D(16,(3),activation='relu',padding='same')(x)
+x = MaxPooling1D((4),padding='same')(x)
+x = Conv1D(4,(3),activation='relu',padding='same')(x)
+encoded = MaxPooling1D((4),padding='same')(x)
+
+x = Conv1D(8, (3), activation='relu', padding='same')(encoded)
+x = UpSampling1D((4))(x)
+x = Conv1D(16, (3), activation='relu', padding='same')(x)
+x = UpSampling1D((4))(x)
+x = Conv1D(32, (3), activation='relu', padding='same')(x)
+x = UpSampling1D((4))(x)
+x = Conv1D(64, (3), activation='relu', padding='same')(x)
+x = UpSampling1D((4))(x)
+decoded = Conv1D(1, (3), activation='sigmoid', padding='same')(x)
+
+autoencoder = Model(input_signal,decoded)
+opt = optimizers.Adam(
+    learning_rate=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-07, amsgrad=False,
+    name='Adam'
+)
+
+autoencoder.compile(optimizer='sgd',loss='mse',metrics=[metrics.RootMeanSquaredError(),prd,prdn,snr])
+#autoencoder.compile(optimizer=opt,loss='mse',metrics=[metrics.RootMeanSquaredError(),percentage_rms_difference])
+
+'''
 print(X_noisy)
 print(X_noisy.shape)
 print(X_original)
 print(X_original.shape)
 print(len(X_noisy))
-
+'''
+#test data sets
 RATIO = 0.3
 shuffle_index = np.random.permutation(len(X_noisy))
+#print('shuffle_index:',shuffle_index)
 test_length = int(RATIO * len(shuffle_index)) # RATIO = 0.3
+#print('test dataset length:',test_length)
 test_index = shuffle_index[:test_length]
+#print('test index:',test_index)
 train_index = shuffle_index[test_length:]
+#print('train index:',train_index)
+
 X_test_noisy = X_noisy[test_index]
+#print('x test noisy:',X_test_noisy)
 X_test_original = X_original[test_index]
+#print('x test origin:',X_test_original)
 X_train_noisy = X_noisy[train_index]
+#print('x train origin:',X_train_noisy)
 X_train_original = X_original[train_index]
+#print('x train origin:',X_train_original)
 
-# open a terminal and start TensorBoard to read logs in the autoencoder subdirectory
-# tensorboard --logdir=autoencoder
-tensorboard_callback = TensorBoard(log_dir='log', histogram_freq=1)
-autoencoder.fit(X_train_noisy,X_train_original,epochs=100, batch_size=32, shuffle=True,
-                validation_split=RATIO,
-                verbose=2,
+autoencoder.fit(X_train_noisy,X_train_original,epochs=250,batch_size=32, shuffle=True,
+                validation_data=(X_test_noisy,X_test_original),
                 callbacks=[TensorBoard(log_dir='noisy', histogram_freq=0, write_grads=False)])
-
-id = np.random.randint(0,len(X_train_original))
-plt.subplot(211)
-plt.plot(X_train_noisy[id])
-plt.title('train_noisy ')
-plt.subplot(212)
-plt.plot(X_test_original[id])
-plt.title('test original ')
-#plt.savefig(name+'.png')
-plt.show()
+autoencoder.summary()
 
 '''
 autoencoder.fit(X_train_noisy,X_train_original,epochs=100, batch_size=32, shuffle=True,
@@ -480,47 +432,25 @@ autoencoder.fit(X_train_noisy,X_train_original,epochs=100, batch_size=32, shuffl
                 validation_split=RATIO, verbose=2,
                 callbacks=[TensorBoard(log_dir='noisy', histogram_freq=0, write_grads=False)])
 '''
-
-decoded_signals = autoencoder.predict(X_test_noisy)
+encoder_signals = autoencoder.predict(X_test_noisy)
+decoded_signals = autoencoder.predict(encoder_signals)
 serialization('signal_pred',decoded_signals)
 serialization('signal_true',X_test_original)
+
+plt.subplot(211)
+plt.plot(decoded_signals[1])
+plt.title('decoded ecg')
+plt.subplot(212)
+plt.plot(X_test_original[1])
+plt.title('original ecg')
+# plt.savefig(name+'.png')
+plt.show()
+
+
 CR = getsize(r'pickle\s_signal_true')/getsize(r'pickle\s_signal_pred')
 print('CR:',CR)
 
-id = np.random.randint(0,len(decoded_signals))
-plt.subplot(211)
-plt.plot(decoded_signals[id])
-plt.title('decoded signal ')
-plt.subplot(212)
-plt.plot(X_test_original[id])
-plt.title('test original ')
-#plt.savefig(name+'.png')
-plt.show()
-
-'''
-n=2
-plt.figure(figsize=(20,20),dpi = 100)
-for i in range(n):
-    ax = plt.subplot(2,n,i+1)
-    plt.imshow(X_test_noisy[i])
-    ax = plt.subplot(2,n,i+n+1)
-    plt.imshow(decoded_signals[i])
-plt.show()
-
-encoder = Model(input_signal,encoded)
-encoded_signals = encoder.predict(X_test_original)
-
-pickle.dump(encoded_signals,open('denosied_auto_features.pickle','wb'))
-
-n = 2
-plt.figure(figsize=(20, 20), dpi=100)
-for i in range(n):
-    ax = plt.subplot(1, n, i + 1)
-    plt.imshow(encoded_signals[i].T)
-plt.show()
-'''
-
-K.clear_session()
+k.clear_session()
 
 #Model.save(filepath = 'model')
 #history = autoencoder.fit(normal_train_data,normal_train_data,epochs=100,batchsize=32,validation_data=(test_data,test_data),shuffle=True)
