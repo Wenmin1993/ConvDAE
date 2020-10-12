@@ -1,0 +1,186 @@
+$ ./main_reference_model.py ecg_chIII_128Hz_120sec.pkl 
+Train on 11200 samples, validate on 4800 samples
+Epoch 1/50
+11200/11200 - 5s - loss: 0.4467 - accuracy: 0.7928 - val_loss: 1.9172 - val_accuracy: 0.5019
+Epoch 2/50
+11200/11200 - 4s - loss: 0.2785 - accuracy: 0.8940 - val_loss: 1.3588 - val_accuracy: 0.5567
+Epoch 3/50
+11200/11200 - 4s - loss: 0.2158 - accuracy: 0.9212 - val_loss: 0.2217 - val_accuracy: 0.9162
+Epoch 4/50
+11200/11200 - 4s - loss: 0.2020 - accuracy: 0.9266 - val_loss: 0.1935 - val_accuracy: 0.9377
+Epoch 5/50
+11200/11200 - 5s - loss: 0.1986 - accuracy: 0.9256 - val_loss: 0.4265 - val_accuracy: 0.8185
+Epoch 6/50
+11200/11200 - 4s - loss: 0.1896 - accuracy: 0.9311 - val_loss: 0.5315 - val_accuracy: 0.7523
+Epoch 7/50
+11200/11200 - 4s - loss: 0.1995 - accuracy: 0.9271 - val_loss: 0.2448 - val_accuracy: 0.9075
+Epoch 8/50
+11200/11200 - 4s - loss: 0.1752 - accuracy: 0.9404 - val_loss: 0.2546 - val_accuracy: 0.8846
+Epoch 9/50
+11200/11200 - 4s - loss: 0.1602 - accuracy: 0.9427 - val_loss: 0.2612 - val_accuracy: 0.9277
+Epoch 10/50
+11200/11200 - 4s - loss: 0.1647 - accuracy: 0.9414 - val_loss: 0.6426 - val_accuracy: 0.7223
+Epoch 11/50
+11200/11200 - 5s - loss: 0.1548 - accuracy: 0.9471 - val_loss: 0.1576 - val_accuracy: 0.9435
+Epoch 12/50
+11200/11200 - 5s - loss: 0.1592 - accuracy: 0.9465 - val_loss: 0.1477 - val_accuracy: 0.9585
+Epoch 13/50
+11200/11200 - 5s - loss: 0.1518 - accuracy: 0.9478 - val_loss: 0.6594 - val_accuracy: 0.7204
+Epoch 14/50
+11200/11200 - 5s - loss: 0.1711 - accuracy: 0.9394 - val_loss: 0.5073 - val_accuracy: 0.7458
+Epoch 15/50
+11200/11200 - 4s - loss: 0.1513 - accuracy: 0.9464 - val_loss: 0.1682 - val_accuracy: 0.9419
+Epoch 16/50
+11200/11200 - 5s - loss: 0.1438 - accuracy: 0.9531 - val_loss: 0.1609 - val_accuracy: 0.9502
+Epoch 17/50
+11200/11200 - 4s - loss: 0.1412 - accuracy: 0.9520 - val_loss: 0.6711 - val_accuracy: 0.7504
+Epoch 18/50
+11200/11200 - 5s - loss: 0.1483 - accuracy: 0.9508 - val_loss: 0.7086 - val_accuracy: 0.5427
+Epoch 19/50
+11200/11200 - 4s - loss: 0.1363 - accuracy: 0.9554 - val_loss: 0.2173 - val_accuracy: 0.9250
+Epoch 20/50
+11200/11200 - 5s - loss: 0.1379 - accuracy: 0.9528 - val_loss: 0.2179 - val_accuracy: 0.9179
+Epoch 21/50
+11200/11200 - 4s - loss: 0.1540 - accuracy: 0.9481 - val_loss: 0.3073 - val_accuracy: 0.8765
+Epoch 22/50
+11200/11200 - 4s - loss: 0.1373 - accuracy: 0.9510 - val_loss: 0.3253 - val_accuracy: 0.8896
+Epoch 23/50
+11200/11200 - 5s - loss: 0.1315 - accuracy: 0.9551 - val_loss: 0.1515 - val_accuracy: 0.9519
+Epoch 24/50
+11200/11200 - 4s - loss: 0.1279 - accuracy: 0.9578 - val_loss: 0.1486 - val_accuracy: 0.9473
+Epoch 25/50
+11200/11200 - 4s - loss: 0.1333 - accuracy: 0.9555 - val_loss: 0.4449 - val_accuracy: 0.7827
+Epoch 26/50
+11200/11200 - 4s - loss: 0.1315 - accuracy: 0.9563 - val_loss: 0.4109 - val_accuracy: 0.8781
+Epoch 27/50
+11200/11200 - 5s - loss: 0.1344 - accuracy: 0.9533 - val_loss: 0.2001 - val_accuracy: 0.9279
+Epoch 28/50
+11200/11200 - 4s - loss: 0.1371 - accuracy: 0.9528 - val_loss: 0.1850 - val_accuracy: 0.9427
+Epoch 29/50
+11200/11200 - 4s - loss: 0.1208 - accuracy: 0.9580 - val_loss: 1.1766 - val_accuracy: 0.7008
+Epoch 30/50
+11200/11200 - 4s - loss: 0.1329 - accuracy: 0.9561 - val_loss: 0.7021 - val_accuracy: 0.7552
+Epoch 31/50
+11200/11200 - 4s - loss: 0.1262 - accuracy: 0.9571 - val_loss: 0.1021 - val_accuracy: 0.9669
+Epoch 32/50
+11200/11200 - 5s - loss: 0.1226 - accuracy: 0.9577 - val_loss: 0.2143 - val_accuracy: 0.9262
+Epoch 33/50
+11200/11200 - 4s - loss: 0.1289 - accuracy: 0.9566 - val_loss: 0.2428 - val_accuracy: 0.8958
+Epoch 34/50
+11200/11200 - 4s - loss: 0.1454 - accuracy: 0.9535 - val_loss: 1.0670 - val_accuracy: 0.6394
+Epoch 35/50
+11200/11200 - 4s - loss: 0.1376 - accuracy: 0.9523 - val_loss: 0.1360 - val_accuracy: 0.9521
+Epoch 36/50
+11200/11200 - 4s - loss: 0.1293 - accuracy: 0.9569 - val_loss: 0.2617 - val_accuracy: 0.8975
+Epoch 37/50
+11200/11200 - 4s - loss: 0.1443 - accuracy: 0.9484 - val_loss: 0.3251 - val_accuracy: 0.8742
+Epoch 38/50
+11200/11200 - 4s - loss: 0.1379 - accuracy: 0.9511 - val_loss: 0.1402 - val_accuracy: 0.9523
+Epoch 39/50
+11200/11200 - 4s - loss: 0.1271 - accuracy: 0.9565 - val_loss: 0.2154 - val_accuracy: 0.9158
+Epoch 40/50
+11200/11200 - 4s - loss: 0.1268 - accuracy: 0.9585 - val_loss: 0.1561 - val_accuracy: 0.9456
+Epoch 41/50
+11200/11200 - 4s - loss: 0.1389 - accuracy: 0.9516 - val_loss: 0.1705 - val_accuracy: 0.9402
+Epoch 42/50
+11200/11200 - 4s - loss: 0.1283 - accuracy: 0.9543 - val_loss: 0.1368 - val_accuracy: 0.9517
+Epoch 43/50
+11200/11200 - 4s - loss: 0.1282 - accuracy: 0.9569 - val_loss: 0.1606 - val_accuracy: 0.9446
+Epoch 44/50
+11200/11200 - 4s - loss: 0.1250 - accuracy: 0.9556 - val_loss: 0.1701 - val_accuracy: 0.9390
+Epoch 45/50
+11200/11200 - 4s - loss: 0.1311 - accuracy: 0.9556 - val_loss: 0.2513 - val_accuracy: 0.8935
+Epoch 46/50
+11200/11200 - 4s - loss: 0.1234 - accuracy: 0.9575 - val_loss: 0.1126 - val_accuracy: 0.9629
+Epoch 47/50
+11200/11200 - 4s - loss: 0.1253 - accuracy: 0.9583 - val_loss: 0.4810 - val_accuracy: 0.8896
+Epoch 48/50
+11200/11200 - 4s - loss: 0.1257 - accuracy: 0.9552 - val_loss: 1.7343 - val_accuracy: 0.5756
+Epoch 49/50
+11200/11200 - 5s - loss: 0.1194 - accuracy: 0.9578 - val_loss: 0.1718 - val_accuracy: 0.9402
+Epoch 50/50
+11200/11200 - 4s - loss: 0.1287 - accuracy: 0.9563 - val_loss: 0.6368 - val_accuracy: 0.7502
+Model: "ReferenceModel"
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+input_1 (InputLayer)         [(None, 3840, 1)]         0         
+_________________________________________________________________
+batch_normalization (BatchNo (None, 3840, 1)           4         
+_________________________________________________________________
+conv1d (Conv1D)              (None, 1277, 6)           60        
+_________________________________________________________________
+batch_normalization_1 (Batch (None, 1277, 6)           18        
+_________________________________________________________________
+activation (Activation)      (None, 1277, 6)           0         
+_________________________________________________________________
+max_pooling1d (MaxPooling1D) (None, 212, 6)            0         
+_________________________________________________________________
+conv1d_1 (Conv1D)            (None, 212, 3)            18        
+_________________________________________________________________
+batch_normalization_2 (Batch (None, 212, 3)            9         
+_________________________________________________________________
+activation_1 (Activation)    (None, 212, 3)            0         
+_________________________________________________________________
+conv1d_2 (Conv1D)            (None, 207, 4)            72        
+_________________________________________________________________
+batch_normalization_3 (Batch (None, 207, 4)            12        
+_________________________________________________________________
+activation_2 (Activation)    (None, 207, 4)            0         
+_________________________________________________________________
+conv1d_3 (Conv1D)            (None, 205, 3)            36        
+_________________________________________________________________
+batch_normalization_4 (Batch (None, 205, 3)            9         
+_________________________________________________________________
+activation_3 (Activation)    (None, 205, 3)            0         
+_________________________________________________________________
+max_pooling1d_1 (MaxPooling1 (None, 102, 3)            0         
+_________________________________________________________________
+conv1d_4 (Conv1D)            (None, 101, 2)            12        
+_________________________________________________________________
+batch_normalization_5 (Batch (None, 101, 2)            8         
+_________________________________________________________________
+activation_4 (Activation)    (None, 101, 2)            0         
+_________________________________________________________________
+global_average_pooling1d (Gl (None, 2)                 0         
+_________________________________________________________________
+dense (Dense)                (None, 1)                 2         
+_________________________________________________________________
+batch_normalization_6 (Batch (None, 1)                 4         
+_________________________________________________________________
+activation_5 (Activation)    (None, 1)                 0         
+=================================================================
+Total params: 264
+Trainable params: 224
+Non-trainable params: 40
+_________________________________________________________________
+11200/11200 - 1s
+4800/4800 - 1s
+Training set performance:
+- accuracy: 0.9698
+- sensitivity: 0.9877
+- specificity: 0.9520
+- precision: 0.9536
+- AUC: 0.9934
+Validation set performance:
+- accuracy: 0.9669
+- sensitivity: 0.9859
+- specificity: 0.9478
+- precision: 0.9499
+- AUC: 0.9929
+
+
+
+
+Training set performance:
+- accuracy: 0.9677
+- sensitivity: 1.0000
+- specificity: 0.0000
+- precision: 0.9677
+- AUC: 0.5311
+Validation set performance:
+- accuracy: 0.9663
+- sensitivity: 1.0000
+- specificity: 0.0000
+- precision: 0.9663
+- AUC: 0.5008
